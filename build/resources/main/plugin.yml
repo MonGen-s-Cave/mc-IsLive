@@ -1,6 +1,6 @@
-name: mc-IsLive
+name: mc-StreamLink
 version: '1.0.0'
-main: com.mongenscave.mcislive.McIsLive
+main: com.mongenscave.mcstreamlink.McStreamLink
 api-version: '1.18'
 authors: [ coma112 ]
 softdepend:

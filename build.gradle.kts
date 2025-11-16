@@ -46,7 +46,7 @@ tasks.withType<JavaCompile> {
 
 zapper {
     libsFolder = "libs"
-    relocationPrefix = "com.mongenscave.mcislive"
+    relocationPrefix = "com.mongenscave.mcstreamlink"
 
     repositories { includeProjectRepositories() }
 

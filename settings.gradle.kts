@@ -1,1 +1,1 @@
-rootProject.name = "mc-IsLive"
+rootProject.name = "mc-StreamLink"
