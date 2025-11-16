@@ -2,11 +2,13 @@ package com.mongenscave.mcislive;
 
 import com.github.Anon8281.universalScheduler.UniversalScheduler;
 import com.github.Anon8281.universalScheduler.scheduling.schedulers.TaskScheduler;
-import com.mongenscave.mcislive.client.TwitchApiClient;
-import com.mongenscave.mcislive.client.YoutubeApiClient;
+import com.mongenscave.mcislive.clients.TwitchApiClient;
+import com.mongenscave.mcislive.clients.YoutubeApiClient;
 import com.mongenscave.mcislive.config.Config;
 import com.mongenscave.mcislive.hooks.plugins.PlaceholderAPI;
+import com.mongenscave.mcislive.identifiers.keys.ConfigKeys;
 import com.mongenscave.mcislive.managers.MediaDataManager;
+import com.mongenscave.mcislive.managers.MilestoneManager;
 import com.mongenscave.mcislive.service.LiveCheckService;
 import com.mongenscave.mcislive.utils.NotificationUtils;
 import com.mongenscave.mcislive.utils.LoggerUtils;
@@ -30,6 +32,7 @@ public final class McIsLive extends ZapperJavaPlugin {
     @Getter private YoutubeApiClient youtubeClient;
     @Getter private TwitchApiClient twitchClient;
     @Getter private LiveCheckService liveCheckService;
+    @Getter private MilestoneManager milestoneManager;
     private Config config;
 
     @Override
@@ -44,13 +47,10 @@ public final class McIsLive extends ZapperJavaPlugin {
         initializeComponents();
 
         mediaDataManager = new MediaDataManager(this);
+        milestoneManager = new MilestoneManager(this);
 
-        String youtubeApiKey = config.getString("api.youtube.api-key", "");
-        String twitchClientId = config.getString("api.twitch.client-id", "");
-        String twitchClientSecret = config.getString("api.twitch.client-secret", "");
-
-        youtubeClient = new YoutubeApiClient(this, youtubeApiKey);
-        twitchClient = new TwitchApiClient(this, twitchClientId, twitchClientSecret);
+        youtubeClient = new YoutubeApiClient(this, ConfigKeys.API_YOUTUBE_API_KEY.getString());
+        twitchClient = new TwitchApiClient(this, ConfigKeys.API_TWITCH_CLIENT_ID.getString(), ConfigKeys.API_TWITCH_CLIENT_SECRET.getString());
 
         NotificationUtils notificationService = new NotificationUtils(this);
         liveCheckService = new LiveCheckService(this, mediaDataManager, youtubeClient, twitchClient, notificationService);
@@ -65,13 +65,8 @@ public final class McIsLive extends ZapperJavaPlugin {
 
     @Override
     public void onDisable() {
-        if (liveCheckService != null) {
-            liveCheckService.stop();
-        }
-
-        if (scheduler != null) {
-            scheduler.cancelTasks();
-        }
+        if (liveCheckService != null) liveCheckService.stop();
+        if (scheduler != null) scheduler.cancelTasks();
     }
 
     public Config getConfiguration() {

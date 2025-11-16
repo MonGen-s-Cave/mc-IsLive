@@ -2,8 +2,8 @@ package com.mongenscave.mcislive.service;
 
 import com.github.Anon8281.universalScheduler.scheduling.tasks.MyScheduledTask;
 import com.mongenscave.mcislive.McIsLive;
-import com.mongenscave.mcislive.client.TwitchApiClient;
-import com.mongenscave.mcislive.client.YoutubeApiClient;
+import com.mongenscave.mcislive.clients.TwitchApiClient;
+import com.mongenscave.mcislive.clients.YoutubeApiClient;
 import com.mongenscave.mcislive.data.PlayerMediaData;
 import com.mongenscave.mcislive.identifiers.PlatformType;
 import com.mongenscave.mcislive.identifiers.keys.ConfigKeys;
@@ -101,7 +101,7 @@ public class LiveCheckService {
             case TIKTOK -> CompletableFuture.completedFuture(false);
         };
 
-        return checkFuture.thenAccept(isLive -> {
+        return checkFuture.thenCompose(isLive -> {
             boolean wasLive = previousStates
                     .computeIfAbsent(playerUuid, k -> new ConcurrentHashMap<>())
                     .getOrDefault(platform, false);
@@ -115,10 +115,41 @@ public class LiveCheckService {
             }
 
             previousStates.get(playerUuid).put(platform, isLive);
+
+            if (isLive) return checkMilestones(playerUuid, platform, data.getChannelUrl());
+            return CompletableFuture.completedFuture(null);
+
         }).exceptionally(exception -> {
             LoggerUtils.error(exception.getMessage());
             return null;
         });
+    }
+
+    private CompletableFuture<Void> checkMilestones(@NotNull UUID playerUuid, @NotNull PlatformType platform, @NotNull String channelUrl) {
+        CompletableFuture<Integer> viewerFuture;
+        CompletableFuture<Integer> followerFuture;
+
+        switch (platform) {
+            case YOUTUBE -> {
+                viewerFuture = plugin.getYoutubeClient().getCurrentViewerCount(channelUrl);
+                followerFuture = plugin.getYoutubeClient().getSubscriberCount(channelUrl);
+            }
+            case TWITCH ->{
+                viewerFuture = plugin.getTwitchClient().getCurrentViewerCount(channelUrl);
+                followerFuture = plugin.getTwitchClient().getFollowerCount(channelUrl);
+            }
+            default -> {
+                return CompletableFuture.completedFuture(null);
+            }
+        }
+
+        return CompletableFuture.allOf(viewerFuture, followerFuture)
+                .thenAccept(v -> {
+                    int viewerCount = viewerFuture.join();
+                    int followerCount = followerFuture.join();
+
+                    plugin.getMilestoneManager().checkMilestones(playerUuid, platform, viewerCount, followerCount);
+                });
     }
 
     @NotNull
@@ -130,17 +161,5 @@ public class LiveCheckService {
         }
 
         return players;
-    }
-
-    public void checkPlayerNow(@NotNull UUID playerUuid) {
-        Map<PlatformType, PlayerMediaData> playerData = dataManager.getAllPlayerData(playerUuid);
-
-        if (playerData.isEmpty()) {
-            return;
-        }
-
-        for (Map.Entry<PlatformType, PlayerMediaData> entry : playerData.entrySet()) {
-            checkPlayerPlatform(playerUuid, entry.getKey(), entry.getValue());
-        }
     }
 }

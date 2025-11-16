@@ -1,4 +1,4 @@
-package com.mongenscave.mcislive.client;
+package com.mongenscave.mcislive.clients;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -152,12 +152,45 @@ public class YoutubeApiClient {
         return items != null && !items.isEmpty();
     }
 
-    @Nullable
-    public CompletableFuture<LiveStreamInfo> getLiveStreamInfo(@NotNull String channelUrl) {
+    public CompletableFuture<Integer> getSubscriberCount(@NotNull String channelUrl) {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 String channelId = extractChannelId(channelUrl);
-                if (channelId == null) return null;
+                if (channelId == null) return 0;
+
+                String url = String.format("%s/channels?part=statistics&id=%s&key=%s",
+                        API_BASE, channelId, apiKey);
+
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(URI.create(url))
+                        .GET()
+                        .build();
+
+                HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+                if (response.statusCode() != 200) return 0;
+
+                JsonObject jsonResponse = JsonParser.parseString(response.body()).getAsJsonObject();
+                JsonArray items = jsonResponse.getAsJsonArray("items");
+
+                if (items == null || items.isEmpty()) return 0;
+
+                JsonObject statistics = items.get(0).getAsJsonObject()
+                        .getAsJsonObject("statistics");
+
+                return statistics.get("subscriberCount").getAsInt();
+            } catch (Exception exception) {
+                LoggerUtils.error(exception.getMessage());
+                return 0;
+            }
+        });
+    }
+
+    public CompletableFuture<Integer> getCurrentViewerCount(@NotNull String channelUrl) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                String channelId = extractChannelId(channelUrl);
+                if (channelId == null) return 0;
 
                 String url = String.format("%s/search?part=snippet&channelId=%s&eventType=live&type=video&key=%s",
                         API_BASE, channelId, apiKey);
@@ -169,28 +202,43 @@ public class YoutubeApiClient {
 
                 HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
-                if (response.statusCode() != 200) return null;
+                if (response.statusCode() != 200) return 0;
 
                 JsonObject jsonResponse = JsonParser.parseString(response.body()).getAsJsonObject();
                 JsonArray items = jsonResponse.getAsJsonArray("items");
 
-                if (items == null || items.isEmpty()) return null;
+                if (items == null || items.isEmpty()) return 0;
 
-                JsonObject firstItem = items.get(0).getAsJsonObject();
-                JsonObject snippet = firstItem.getAsJsonObject("snippet");
-                String videoId = firstItem.getAsJsonObject("id").get("videoId").getAsString();
+                String videoId = items.get(0).getAsJsonObject().getAsJsonObject("id")
+                        .get("videoId").getAsString();
 
-                return new LiveStreamInfo(
-                        snippet.get("title").getAsString(),
-                        "https://www.youtube.com/watch?v=" + videoId,
-                        snippet.get("channelTitle").getAsString()
-                );
+                String videoUrl = String.format("%s/videos?part=liveStreamingDetails&id=%s&key=%s",
+                        API_BASE, videoId, apiKey);
+
+                HttpRequest videoRequest = HttpRequest.newBuilder()
+                        .uri(URI.create(videoUrl))
+                        .GET()
+                        .build();
+
+                HttpResponse<String> videoResponse = httpClient.send(videoRequest, HttpResponse.BodyHandlers.ofString());
+
+                if (videoResponse.statusCode() != 200) return 0;
+
+                JsonObject videoJson = JsonParser.parseString(videoResponse.body()).getAsJsonObject();
+                JsonArray videoItems = videoJson.getAsJsonArray("items");
+
+                if (videoItems == null || videoItems.isEmpty()) return 0;
+
+                JsonObject liveDetails = videoItems.get(0).getAsJsonObject()
+                        .getAsJsonObject("liveStreamingDetails");
+
+                if (liveDetails == null || !liveDetails.has("concurrentViewers")) return 0;
+
+                return liveDetails.get("concurrentViewers").getAsInt();
             } catch (Exception exception) {
                 LoggerUtils.error(exception.getMessage());
-                return null;
+                return 0;
             }
         });
     }
-
-    public record LiveStreamInfo(String title, String url, String channelName) {}
 }

@@ -1,4 +1,4 @@
-package com.mongenscave.mcislive.client;
+package com.mongenscave.mcislive.clients;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -159,20 +159,52 @@ public class TwitchApiClient {
         return data != null && !data.isEmpty() && data.get(0).getAsJsonObject().get("type").getAsString().equals("live");
     }
 
-    @Nullable
-    public CompletableFuture<LiveStreamInfo> getLiveStreamInfo(@NotNull String channelUrl) {
+    public CompletableFuture<Integer> getFollowerCount(@NotNull String channelUrl) {
         return ensureAccessToken().thenCompose(success -> {
-            if (!success) {
-                return CompletableFuture.completedFuture(null);
-            }
+            if (!success) return CompletableFuture.completedFuture(0);
 
             return CompletableFuture.supplyAsync(() -> {
                 try {
                     String username = extractUsername(channelUrl);
-                    if (username == null) return null;
+                    if (username == null) return 0;
 
                     String userId = getUserId(username);
-                    if (userId == null) return null;
+                    if (userId == null) return 0;
+
+                    String url = String.format("%s/channels/followers?broadcaster_id=%s", API_BASE, userId);
+
+                    HttpRequest request = HttpRequest.newBuilder()
+                            .uri(URI.create(url))
+                            .header("Client-ID", clientId)
+                            .header("Authorization", "Bearer " + accessToken)
+                            .GET()
+                            .build();
+
+                    HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+                    if (response.statusCode() != 200) return 0;
+
+                    JsonObject jsonResponse = JsonParser.parseString(response.body()).getAsJsonObject();
+                    return jsonResponse.get("total").getAsInt();
+                } catch (Exception exception) {
+                    LoggerUtils.error(exception.getMessage());
+                    return 0;
+                }
+            });
+        });
+    }
+
+    public CompletableFuture<Integer> getCurrentViewerCount(@NotNull String channelUrl) {
+        return ensureAccessToken().thenCompose(success -> {
+            if (!success) return CompletableFuture.completedFuture(0);
+
+            return CompletableFuture.supplyAsync(() -> {
+                try {
+                    String username = extractUsername(channelUrl);
+                    if (username == null) return 0;
+
+                    String userId = getUserId(username);
+                    if (userId == null) return 0;
 
                     String url = String.format("%s/streams?user_id=%s", API_BASE, userId);
 
@@ -185,28 +217,19 @@ public class TwitchApiClient {
 
                     HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
-                    if (response.statusCode() != 200) return null;
+                    if (response.statusCode() != 200) return 0;
 
                     JsonObject jsonResponse = JsonParser.parseString(response.body()).getAsJsonObject();
                     JsonArray data = jsonResponse.getAsJsonArray("data");
 
-                    if (data == null || data.isEmpty()) return null;
+                    if (data == null || data.isEmpty()) return 0;
 
-                    JsonObject streamData = data.get(0).getAsJsonObject();
-
-                    return new LiveStreamInfo(
-                            streamData.get("title").getAsString(),
-                            "https://twitch.tv/" + streamData.get("user_login").getAsString(),
-                            streamData.get("user_name").getAsString(),
-                            streamData.get("viewer_count").getAsInt()
-                    );
+                    return data.get(0).getAsJsonObject().get("viewer_count").getAsInt();
                 } catch (Exception exception) {
                     LoggerUtils.error(exception.getMessage());
-                    return null;
+                    return 0;
                 }
             });
         });
     }
-
-    public record LiveStreamInfo(String title, String url, String channelName, int viewerCount) { }
 }

@@ -15,9 +15,15 @@ public enum MessageKeys {
 
     INVALID_URL("messages.invalid-url"),
     NO_DATA("messages.no-data"),
+    NOT_NEGATIVE("messages.not-negative"),
+    UNKNOWN_MILESTONE_COMMAND("messages.unknown-milestone-command"),
+    UNKNOWN_MILESTONE("messages.unknown-milestone"),
 
     SUCCESS_ADD("messages.success-add"),
-    SUCCESS_REMOVE("messages.success-remove");
+    SUCCESS_REMOVE("messages.success-remove"),
+
+    MILESTONE_ADDED("messages.milestone-add"),
+    MILESTONE_REMOVED("messages.milestone-remove");
 
     private final String path;
     private static final Config config = McIsLive.getInstance().getLanguage();
