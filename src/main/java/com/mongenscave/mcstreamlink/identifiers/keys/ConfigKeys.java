@@ -33,7 +33,17 @@ public enum ConfigKeys {
     PLACEHOLDER_TWITCH("placeholders.twitch"),
     PLACEHOLDER_YOUTUBE("placeholders.youtube"),
     PLACEHOLDER_LIVE("placeholders.live"),
-    PLACEHOLDER_OFFLINE("placeholders.offline");
+    PLACEHOLDER_OFFLINE("placeholders.offline"),
+
+    MILESTONE_PROGRESS_VIEWER_ENABLED("milestone-progress.viewer.enabled"),
+    MILESTONE_PROGRESS_VIEWER_COLOR("milestone-progress.viewer.color"),
+    MILESTONE_PROGRESS_VIEWER_STYLE("milestone-progress.viewer.style"),
+    MILESTONE_PROGRESS_VIEWER_TITLE("milestone-progress.viewer.title"),
+
+    MILESTONE_PROGRESS_FOLLOWER_ENABLED("milestone-progress.follower.enabled"),
+    MILESTONE_PROGRESS_FOLLOWER_COLOR("milestone-progress.follower.color"),
+    MILESTONE_PROGRESS_FOLLOWER_STYLE("milestone-progress.follower.style"),
+    MILESTONE_PROGRESS_FOLLOWER_TITLE("milestone-progress.follower.title");
 
     private final String path;
     private static final Config config = McStreamLink.getInstance().getConfiguration();

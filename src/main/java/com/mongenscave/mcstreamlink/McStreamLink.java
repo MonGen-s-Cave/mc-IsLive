@@ -7,6 +7,8 @@ import com.mongenscave.mcstreamlink.clients.YoutubeApiClient;
 import com.mongenscave.mcstreamlink.config.Config;
 import com.mongenscave.mcstreamlink.hooks.plugins.PlaceholderAPI;
 import com.mongenscave.mcstreamlink.identifiers.keys.ConfigKeys;
+import com.mongenscave.mcstreamlink.listener.PlayerListener;
+import com.mongenscave.mcstreamlink.managers.BossBarManager;
 import com.mongenscave.mcstreamlink.managers.MediaDataManager;
 import com.mongenscave.mcstreamlink.managers.MilestoneManager;
 import com.mongenscave.mcstreamlink.service.LiveCheckService;
@@ -33,6 +35,7 @@ public final class McStreamLink extends ZapperJavaPlugin {
     @Getter private TwitchApiClient twitchClient;
     @Getter private LiveCheckService liveCheckService;
     @Getter private MilestoneManager milestoneManager;
+    @Getter private BossBarManager bossBarManager;
     private Config config;
 
     @Override
@@ -48,23 +51,26 @@ public final class McStreamLink extends ZapperJavaPlugin {
 
         mediaDataManager = new MediaDataManager(this);
         milestoneManager = new MilestoneManager(this);
+        bossBarManager = new BossBarManager(this);
 
         youtubeClient = new YoutubeApiClient(this, ConfigKeys.API_YOUTUBE_API_KEY.getString());
         twitchClient = new TwitchApiClient(this, ConfigKeys.API_TWITCH_CLIENT_ID.getString(), ConfigKeys.API_TWITCH_CLIENT_SECRET.getString());
 
         NotificationUtils notificationService = new NotificationUtils(this);
-        liveCheckService = new LiveCheckService(this, mediaDataManager, youtubeClient, twitchClient, notificationService);
 
+        liveCheckService = new LiveCheckService(this, mediaDataManager, youtubeClient, twitchClient, notificationService);
         liveCheckService.start();
 
         PlaceholderAPI.registerHook(mediaDataManager);
         RegisterUtils.registerCommands();
+        getServer().getPluginManager().registerEvents(new PlayerListener(), this);
 
         LoggerUtils.printStartup();
     }
 
     @Override
     public void onDisable() {
+        if (bossBarManager != null) bossBarManager.removeAll();
         if (liveCheckService != null) liveCheckService.stop();
         if (scheduler != null) scheduler.cancelTasks();
     }

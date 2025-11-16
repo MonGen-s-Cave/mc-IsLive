@@ -26,7 +26,7 @@ public class PlaceholderAPI {
     private static class PlaceholderIntegration extends PlaceholderExpansion {
         @Override
         public @NotNull String getIdentifier() {
-            return "mcislive";
+            return "mcstreamlink";
         }
 
         @Override

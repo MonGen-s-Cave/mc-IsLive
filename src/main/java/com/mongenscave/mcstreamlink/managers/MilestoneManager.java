@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import com.mongenscave.mcstreamlink.McStreamLink;
+import com.mongenscave.mcstreamlink.annotations.Milestone;
 import com.mongenscave.mcstreamlink.data.MilestoneData;
 import com.mongenscave.mcstreamlink.identifiers.MilestoneType;
 import com.mongenscave.mcstreamlink.identifiers.PlatformType;
@@ -27,6 +28,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.stream.Collectors;
 
 public class MilestoneManager {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
@@ -103,6 +105,18 @@ public class MilestoneManager {
         }
     }
 
+    @NotNull
+    public List<MilestoneData> getPlayerMilestonesByPlatform(@NotNull UUID playerUuid, @NotNull PlatformType platform) {
+        lock.readLock().lock();
+        try {
+            return getPlayerMilestones(playerUuid).stream()
+                    .filter(m -> m.getPlatform() == platform)
+                    .collect(Collectors.toList());
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
     private static boolean isTrigger(int viewerCount, int followerCount, @NotNull MilestoneData milestone) {
         boolean shouldTrigger = false;
 
@@ -123,6 +137,8 @@ public class MilestoneManager {
 
         Player player = Bukkit.getPlayer(playerUuid);
         if (player == null) return;
+
+        plugin.getBossBarManager().onMilestoneComplete(playerUuid, milestone.getId());
 
         String commandTemplate = plugin.getConfiguration().getString("milestone-commands." + milestone.getCommandId());
 

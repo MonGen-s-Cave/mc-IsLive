@@ -148,6 +148,8 @@ public class LiveCheckService {
                     int followerCount = followerFuture.join();
 
                     plugin.getMilestoneManager().checkMilestones(playerUuid, platform, viewerCount, followerCount);
+                    plugin.getBossBarManager().updateBossBars(playerUuid, platform, viewerCount, false);
+                    plugin.getBossBarManager().updateBossBars(playerUuid, platform, followerCount, true);
                 });
     }
 

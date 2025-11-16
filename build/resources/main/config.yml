@@ -40,3 +40,15 @@ milestone-commands:
   milestone-title: "execute as @ALL run title @s title {\"text\":\"MILESTONE!\",\"color\":\"gold\"}"
   milestone-sound: "execute as @ALL run playsound minecraft:ui.toast.challenge_complete master @s ~ ~ ~ 1 1"
   combo-reward: "give @ALL diamond 3; eco give @ALL 500; broadcast &6Milestone reached!"
+
+milestone-progress:
+  viewer:
+    enabled: true
+    color: "BLUE"
+    style: "SOLID"
+    title: "&c{current}&4/&#bd3e4b{target} viewers &8[&#bd3e4b{percent}%&8]"
+  follower:
+    enabled: true
+    color: "RED"
+    style: "SOLID"
+    title: "&c{current}&4/&#bd3e4b{target} followers &8[&#bd3e4b{percent}%&8]"
