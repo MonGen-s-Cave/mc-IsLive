@@ -69,7 +69,7 @@ public class PlaceholderAPI {
                 }
             }
 
-            return "---";
+            return "";
         }
     }
 }
